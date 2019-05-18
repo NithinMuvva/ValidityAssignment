@@ -24,15 +24,19 @@ public class businessControlller {
 	
 	@Autowired
 	private businessService bService;
+	
+	// To view index page
 	@RequestMapping(value="/")
 	public String index() {
 		return "index";	
 	}
-
+	
+	// Post method to take uploaded file
 	@RequestMapping(value="/getSimilarRecords",method=RequestMethod.POST,produces="application/json")
 	public @ResponseBody Map<String,List<User>> getSimilarRecords(@RequestParam("file") MultipartFile file) throws IllegalStateException, IOException{
 	    Map<String,List<User>> data = new HashMap<>();
 	    String path = System.getProperty("user.dir");
+	    // creating new file in local 
 	    File temp_file = new File(path +"/src/main/resources"+"/"+file.getOriginalFilename());
 	    file.transferTo(temp_file);
 	    try{

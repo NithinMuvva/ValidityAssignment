@@ -1,3 +1,4 @@
+// Added back button to load new file
 function backFunction() {
 	$("#chartContainer").hide();
 	$("#duplicateTable").hide();
@@ -6,6 +7,7 @@ function backFunction() {
 	$("#back").hide();
 	$("#myFile").val("");
 }
+// Checks if file is empty else returns similar and unique records 
 function myFunction(){
     var file = document.getElementById('myFile').files[0];
     var txt = "";
@@ -14,7 +16,6 @@ function myFunction(){
         getTableData(file);
         $("#selection").hide();
         $("#back").show();
-        $("#chartContainer").show();
     } 
     else {
     	txt += "Select a file.";
@@ -22,6 +23,7 @@ function myFunction(){
     $("#demo").val(txt);
 }
 
+// Creates tables for data in UI
 function getTableData(){
   $('#duplicateRecords > tbody > tr:nth-child(n+2)').remove();
   $('#nonSimilarRecords > tbody > tr:nth-child(n+2)').remove();
@@ -37,6 +39,7 @@ function getTableData(){
    contentType : false,
    processData : false,
    success: function (data) {
+   $("#chartContainer").show();
    var similarData = data['similarData'];
    var uniqueData = data['uniqueData'];
    $.each(similarData,function(i, item) {
@@ -110,11 +113,12 @@ function getTableData(){
 	   chartFunction(similarLength,uniqueLength);
    },
    error : function(data,errorThrown){
+	    alert("Please select valid file");
         console.log(errorThrown);
    }
    });   
 }
-
+// Displays the percentage chart
 function chartFunction(x,z){
 console.log('in chartFunction');
     var chart = new CanvasJS.Chart("chartContainer",

@@ -20,10 +20,11 @@ import com.opencsv.bean.CsvToBean;
 @Service
 public class businessService {
 	
+	// To get the similar records from the file
 	public Map<String,List<User>> getSimilarRecords(File file) throws IOException {
-		HashMap<String, Boolean> check =  new HashMap<String, Boolean>();
-		List<User> duplicates = new ArrayList<User>();
-		List<User> nonDuplicates = new ArrayList<User>();
+		HashMap<String, Boolean> userDetails =  new HashMap<String, Boolean>(); // To check for which user details are missing
+		List<User> duplicates = new ArrayList<User>(); // duplicates List
+		List<User> nonDuplicates = new ArrayList<User>(); // non duplicates list
 		HashMap<String, List<User>> data  =  new HashMap<>();
 		try{
 		  ColumnPositionMappingStrategy<User> strategy = new ColumnPositionMappingStrategy<User>();
@@ -40,48 +41,46 @@ public class businessService {
 		  } 
 		  CsvToBean<User> csv = new CsvToBean<User>();
 		  @SuppressWarnings("deprecation")
-		  List<User> list = csv.parse(strategy, reader);
-		  
-		  for( User myUser : list) {
-			  check.clear();
-			  if(myUser.getId().equals("47")) {
-				  System.out.println("sa");
+		  List<User> dataList = csv.parse(strategy, reader);
+		  // checking each record for duplication
+		  for( User user : dataList) {
+			  userDetails.clear();
+			  if(!user.getZip().isEmpty()) {
+				userDetails.put("zip", true);
 			  }
-			  if(!myUser.getZip().isEmpty()) {
-				check.put("zip", true);
+			  if(!user.getCity().isEmpty()) {
+				userDetails.put("city", true);
 			  }
-			  if(!myUser.getCity().isEmpty()) {
-				check.put("city", true);
+			  if(!user.getState().isEmpty()) {
+				userDetails.put("state", true);
 			  }
-			  if(!myUser.getState().isEmpty()) {
-				check.put("state", true);
+			  if(!user.getAddress().trim().isEmpty()) {
+				userDetails.put("address", true);
 			  }
-			  if(!myUser.getAddress().trim().isEmpty()) {
-				check.put("address", true);
+			  if(!user.getCompany().isEmpty()) {
+				userDetails.put("company", true);
 			  }
-			  if(!myUser.getCompany().isEmpty()) {
-				check.put("company", true);
+			  if(!user.getEmail().isEmpty()) {
+				userDetails.put("email", true);
 			  }
-			  if(!myUser.getEmail().isEmpty()) {
-				check.put("email", true);
-			  }
-			  if(!myUser.getPhone().isEmpty()) {
-				check.put("phone", true);
+			  if(!user.getPhone().isEmpty()) {
+				userDetails.put("phone", true);
 			  }
 			  int size = nonDuplicates.size();
 			  Boolean found = false;
 			  if(size == 0) {
-				  nonDuplicates.add(myUser);
+				  // first User
+				  nonDuplicates.add(user);
 			  }else {
 				  for( int i = 0; i < size ; i++) {
-					  found = calculateSimilarity(myUser,nonDuplicates.get(i),check);
+					  found = calculateSimilarity(user,nonDuplicates.get(i),userDetails);
 					  if(found) {
-						  duplicates.add(myUser);
+						  duplicates.add(user);
 						  break;
 					  }
 				  }
 				  if(!found) {
-					  nonDuplicates.add(myUser);
+					  nonDuplicates.add(user);
 				  }
 			  }
 		  }
@@ -93,41 +92,43 @@ public class businessService {
 		     return null;
 		}
 	}
-	public Boolean calculateSimilarity(User u1, User u2, Map<String, Boolean> check) {
+	public Boolean calculateSimilarity(User u1, User u2, Map<String, Boolean> userDetails) {
 		try{
-			double score = 0;
-			int c = 0;
-			double fullName = calDist(u1.getFullName(),u2.getFullName());
+			double score = 0; // score to compare similarity between 2 records
+			int count = 0;
+			double fullName = caluclateDistance(u1.getFullName(),u2.getFullName());
+			// if full name is similar, check for other attributes
 			if(fullName < 0.4) {
-				 if(check.containsKey("company")) {
-					 double company = calDist(u1.getCompany(),u2.getCompany());
-					 c++;
+				 if(userDetails.containsKey("company")) {
+					 double company = caluclateDistance(u1.getCompany(),u2.getCompany());
+					 count++;
 					 if(company < 0.5 ) {
 						 score += 25;
 					 }
 				 }
-				 if(check.containsKey("email")) {
-					 double email = calDist(u1.getEmail(),u2.getEmail());
-					 c++;
+				 if(userDetails.containsKey("email")) {
+					 double email = caluclateDistance(u1.getEmail(),u2.getEmail());
+					 count++;
 					 if(email <= 0.5) {
 						 score += 25;
 					 }
 				 }
-				 if(check.containsKey("phone")) {
+				 if(userDetails.containsKey("phone")) {
 					 double maxLen = Math.max(u1.getPhone().length(), u2.getPhone().length());
 					 double phone = LevenshteinDistance.getDefaultInstance().apply(u1.getPhone(), u2.getPhone())/maxLen;
-					 c++;
+					 count++;
 					 if(phone < 0.5) {
 						 score += 25;		 
 					 }
 				 }
-				 if(check.containsKey("address")) {
-					 if(calAddress(u1,u2,check)) {
+				 if(userDetails.containsKey("address")) {
+					 if(calculateAddress(u1,u2,userDetails)) {
 						 score += 25;
 					 }
-					 c++;
+					 count++;
 				 }
-				 score = score/c;
+				 score = score/count;
+				 // if any two of the email , Phone , Company or address matches, They are similar
 				 if(score >= 12.5) {
 					 return true;
 				 }
@@ -140,45 +141,48 @@ public class businessService {
 		}
 		
 	}
-	public Boolean calAddress(User u1 , User u2, Map<String, Boolean> check) {
+	// Checks for address similarity between Users
+	public Boolean calculateAddress(User u1 , User u2, Map<String, Boolean> userDetails) {
 		try{
-			boolean adrsSimilar =  true;
+			boolean isAddressSimilar =  true;
 			double zip = Integer.MAX_VALUE;
 			double city = Integer.MAX_VALUE;
 			double state = Integer.MAX_VALUE;
 			double address = Integer.MAX_VALUE;
-			if(check.containsKey("zip")) {
+			if(userDetails.containsKey("zip")) {
 				double maxLen = Math.max(u1.getZip().length(), u2.getZip().length());
 				 zip = LevenshteinDistance.getDefaultInstance().apply(u1.getZip(), u2.getZip())/maxLen;
 				if(zip > 0.5) {
-					adrsSimilar = false;
+					isAddressSimilar = false;
 				}
 			}
-			if(check.containsKey("city")) {
-				city =calDist(u1.getCity(),u2.getCity());
+			if(userDetails.containsKey("city")) {
+				city =caluclateDistance(u1.getCity(),u2.getCity());
 				if(city > 0.5) {
-					adrsSimilar = false;
+					isAddressSimilar = false;
 				}
 			}
-			if(check.containsKey("state")) {
-				state = calDist(u1.getState(),u2.getState());
+			if(userDetails.containsKey("state")) {
+				state = caluclateDistance(u1.getState(),u2.getState());
 				if(state > 0.5) {
-					adrsSimilar = false;
+					isAddressSimilar = false;
 				}
 			}
-			if(adrsSimilar) {
-				address = calDist(u1.getAddress(),u2.getAddress());
+			// Zip, State, City should match before checking address for user
+			if(isAddressSimilar) {
+				address = caluclateDistance(u1.getAddress(),u2.getAddress());
 				if(address > 0.5) {
-					adrsSimilar = false;
+					isAddressSimilar = false;
 				}
 			}
-			return adrsSimilar;
+			return isAddressSimilar;
 		}catch(Exception e){
 			e.printStackTrace();
 		    return false;
 		}
 	}
-	public Double calDist(String s1, String s2) {
+	// Calculates distance between two string inputs
+	public Double caluclateDistance(String s1, String s2) {
 		try{
 		    if (s1 == null || s2 == null) {
 			throw new IllegalArgumentException("Strings must not be null");
@@ -188,19 +192,21 @@ public class businessService {
 		    
 		    StringTokenizer tokenizer = new StringTokenizer(s1);
 		    StringTokenizer tokenizer2 = new StringTokenizer(s2);
-		    String s1dm = ""; 
-		    DoubleMetaphone m = new DoubleMetaphone();
+		    String doubleMetaphone_s1 = ""; 
+		    // Using double metaphone to generate encoded value for string
+		    DoubleMetaphone metaPhone = new DoubleMetaphone();
 		    while (tokenizer.hasMoreTokens()) {
-		      s1dm += m.doubleMetaphone(tokenizer.nextToken()) + " "; 
+		      doubleMetaphone_s1 += metaPhone.doubleMetaphone(tokenizer.nextToken()) + " "; 
 		    }
-		    s1dm = s1dm.trim();
-		    String s2dm = "";
+		    doubleMetaphone_s1 = doubleMetaphone_s1.trim();
+		    String doubleMetaphone_s2 = "";
 		    while (tokenizer2.hasMoreTokens()) {
-		      s2dm += m.doubleMetaphone(tokenizer2.nextToken()) + " "; 
+		      doubleMetaphone_s2 += metaPhone.doubleMetaphone(tokenizer2.nextToken()) + " "; 
 		    }
-		    double maxLen = Math.max(s1dm.length(), s2dm.length());
-		    s2dm = s2dm.trim();  
-		    double distance = LevenshteinDistance.getDefaultInstance().apply(s1dm, s2dm)/maxLen;
+		    double maxLen = Math.max(doubleMetaphone_s1.length(), doubleMetaphone_s2.length());
+		    doubleMetaphone_s2 = doubleMetaphone_s2.trim();  
+		    // Calculating Levenshtein distance for metaphonic encodings
+		    double distance = LevenshteinDistance.getDefaultInstance().apply(doubleMetaphone_s1, doubleMetaphone_s2)/maxLen;
 		    return distance;
 		}catch(Exception e){
 		     e.printStackTrace(); 
