@@ -43,6 +43,10 @@ public class businessService {
 		  List<User> list = csv.parse(strategy, reader);
 		  
 		  for( User myUser : list) {
+			  check.clear();
+			  if(myUser.getId().equals("47")) {
+				  System.out.println("sa");
+			  }
 			  if(!myUser.getZip().isEmpty()) {
 				check.put("zip", true);
 			  }

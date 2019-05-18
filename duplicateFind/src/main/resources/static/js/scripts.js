@@ -1,12 +1,20 @@
-
+function backFunction() {
+	$("#chartContainer").hide();
+	$("#duplicateTable").hide();
+	$("#nonSimilarTable").hide();
+	$("#selection").show();
+	$("#back").hide();
+	$("#myFile").val("");
+}
 function myFunction(){
     var file = document.getElementById('myFile').files[0];
     var txt = "";
     if (file) {
         txt += "name: " + file.name + "<br>";
         getTableData(file);
-        //chartFunction(45,55);
         $("#selection").hide();
+        $("#back").show();
+        $("#chartContainer").show();
     } 
     else {
     	txt += "Select a file.";

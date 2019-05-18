@@ -9,15 +9,18 @@
 <script type="text/javascript" src="/resources/js/scripts.js"></script>
 </head>
 <body>
-<form action="fileUpload" method="post" enctype="multipart/form-data">
-	<div  class="form-group" id="selection">
-	    <h3>Upload csv file for duplicate records</h3>
-	    <div>
-	        <input type="file" id="myFile" size="50" name="file" accept = ".csv" onchange= "myFunction()">
-	        <p id="demo"></p>
-	    </div>
-	</div> 
-</form>
+<div>
+	<form action="fileUpload" method="post" enctype="multipart/form-data">
+		<div  class="form-group" id="selection">
+		    <h3>Upload csv file for duplicate records</h3>
+		    <div>
+		        <input type="file" id="myFile" size="50" name="file" accept = ".csv" onchange= "myFunction()">
+		        <p id="demo"></p>
+		    </div>
+		</div> 
+	</form>
+</div>
+<button id ="back" type="button" onclick ="backFunction()" style="display:none;"> back</button>
 <div id="chartContainer" style="height: 300px; width: 100%;"></div><br>
 <div id="duplicateTable" style="display:none;">
     <h4>Duplicate Records</h4>
